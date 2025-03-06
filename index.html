@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Harvester</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #0a0a1f;
+            font-family: 'Orbitron', sans-serif;
+            overflow: hidden;
+        }
+
+        .game-container {
+            position: relative;
+            width: 80vw;
+            max-width: 800px;
+            height: 60vh;
+            max-height: 600px;
+            border-radius: 10px;
+            box-shadow: 0 0 40px rgba(0, 255, 255, 0.3);
+            overflow: hidden;
+            background: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiPjxkZWZzPjxyYWRpYWxHcmFkaWVudCBpZD0ibmViIj5zdG9wIGNvbG9yPSIjMzMzM2ZmIiBzdG9wLW9wYWNpdHk9IjAuMiIgb2Zmc2V0PSIwJSIvPjxzdG9wIGNvbG9yPSIjMGEwYTFmIiBzdG9wLW9wYWNpdHk9IjAiIG9mZnNldD0iMTAwJSIvPjwvcmFkaWFsR3JhZGllbnQ+PC9kZWZzPjxyZWN0IHdpZHRoPSIxMDAwIiBoZWlnaHQ9IjEwMDAiIGZpbGw9IiMwYTBhMWYiLz48Y2lyY2xlIGN4PSI1MDAiIGN5PSI1MDAiIHI9IjMwMCIgZmlsbD0idXJsKCNuZWIpIi8+PHBhdGggZD0iTTAgMEgxMDAwVjEwMDBIMCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDBmZmZmIiBzdHJva2Utd2lkdGg9IjEiIHN0cm9rZS1kYXNoYXJyYXk9IjUiLz48L3N2Zz4=');
+            background-size: cover;
+        }
+
+        #gameCanvas {
+            width: 100%;
+            height: 100%;
+            transition: filter 0.3s ease;
+        }
+
+        .ui-element {
+            position: absolute;
+            padding: 8px 16px;
+            background: rgba(0, 255, 255, 0.15);
+            border: 1px solid rgba(0, 255, 255, 0.6);
+            border-radius: 5px;
+            color: #00ffff;
+            text-shadow: 0 0 5px #00ffff;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+        }
+
+        #credits { top: 10px; left: 10px; }
+        #shields { top: 10px; right: 10px; }
+        #sector { bottom: 10px; left: 50%; transform: translateX(-50%); }
+        #pause-button { top: 60px; right: 10px; cursor: pointer; }
+        #copyright { bottom: 10px; right: 10px; font-size: 12px; opacity: 0.7; }
+
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 31, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #00ffff;
+            text-align: center;
+            z-index: 15;
+            transition: opacity 0.5s ease;
+        }
+
+        #start-screen { z-index: 10; }
+        #game-over-screen { display: none; }
+        #pause-menu { display: none; }
+
+        h1 {
+            font-size: 48px;
+            text-shadow: 0 0 15px #00ffff;
+            margin: 0;
+        }
+
+        p {
+            font-size: 24px;
+            color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff;
+            margin: 15px 0;
+        }
+
+        .copyright-notice {
+            font-size: 14px;
+            opacity: 0.7;
+            margin-top: 20px;
+        }
+
+        .button {
+            padding: 12px 24px;
+            font-size: 18px;
+            background: linear-gradient(135deg, #00ffff, #ff00ff);
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.2s ease;
+            text-shadow: 0 0 5px #fff;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.8);
+        }
+
+        .icon {
+            margin-right: 8px;
+            font-size: 20px;
+            filter: drop-shadow(0 0 3px #00ffff);
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <canvas id="gameCanvas"></canvas>
+        <div id="credits" class="ui-element">
+            <span class="icon">💰</span>0
+        </div>
+        <div id="shields" class="ui-element">
+            <span class="icon">🛡️</span>100
+        </div>
+        <div id="sector" class="ui-element">Sector: 1</div>
+        <div id="pause-button" class="ui-element">⏸️</div>
+        <div id="copyright" class="ui-element">© 2025 yashnigam07</div>
+        <div id="start-screen" class="screen">
+            <h1>Quantum Harvester</h1>
+            <p>Arrows: Move | Space: Fire | Survive & Collect!</p>
+            <button class="button" id="start-button">Launch</button>
+            <div class="copyright-notice">© 2025 yashnigam07 - All Rights Reserved</div>
+        </div>
+        <div id="game-over-screen" class="screen">
+            <h1>Mission Failed</h1>
+            <p id="final-score">Score: 0</p>
+            <button class="button" id="restart-button">Retry</button>
+            <div class="copyright-notice">© 2025 yashnigam07 - All Rights Reserved</div>
+        </div>
+        <div id="pause-menu" class="screen">
+            <h1>Paused</h1>
+            <button class="button" id="resume-button">Resume</button>
+            <button class="button" id="restart-pause-button">Restart</button>
+            <button class="button" id="quit-button">Quit</button>
+        </div>
+    </div>
+    <script>
+        class Game {
+            constructor() {
+                this.canvas = document.getElementById('gameCanvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.setupCanvas();
+                this.initElements();
+                this.reset();
+                this.setupEvents();
+                this.loadAudio();
+                this.gameLoop();
+            }
+
+            setupCanvas() {
+                this.canvas.width = Math.min(800, window.innerWidth * 0.8);
+                this.canvas.height = Math.min(600, window.innerHeight * 0.6);
+            }
+
+            initElements() {
+                this.elements = {
+                    credits: document.getElementById('credits'),
+                    shields: document.getElementById('shields'),
+                    sector: document.getElementById('sector'),
+                    pauseButton: document.getElementById('pause-button'),
+                    startScreen: document.getElementById('start-screen'),
+                    gameOverScreen: document.getElementById('game-over-screen'),
+                    pauseMenu: document.getElementById('pause-menu'),
+                    finalScore: document.getElementById('final-score')
+                };
+            }
+
+            reset() {
+                this.state = {
+                    started: false,
+                    paused: false,
+                    credits: 0,
+                    shields: 100,
+                    sector: 1,
+                    combo: 0,
+                    time: 0,
+                    highScore: localStorage.getItem('highScore') || 0
+                };
+
+                this.player = {
+                    x: this.canvas.width / 2,
+                    y: this.canvas.height - 50,
+                    size: 40,
+                    speed: 5,
+                    shootCooldown: 0,
+                    powerUps: new Map()
+                };
+
+                this.entities = {
+                    cores: [],
+                    drones: [],
+                    powerUps: [],
+                    lasers: [],
+                    particles: []
+                };
+            }
+
+            loadAudio() {
+                this.audio = {
+                    bgMusic: new Audio('https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3'),
+                    collect: new Audio('https://www.myinstants.com/media/sounds/sci-fi-beep.mp3'),
+                    hit: new Audio('https://www.myinstants.com/media/sounds/explosion.mp3'),
+                    shoot: new Audio('https://www.myinstants.com/media/sounds/laser.mp3')
+                };
+                this.audio.bgMusic.loop = true;
+                this.audio.bgMusic.volume = 0.2;
+                this.audio.collect.volume = 0.5;
+                this.audio.hit.volume = 0.4;
+                this.audio.shoot.volume = 0.3;
+            }
+
+            setupEvents() {
+                this.keys = new Map();
+                document.addEventListener('keydown', e => this.keys.set(e.key, true));
+                document.addEventListener('keyup', e => this.keys.set(e.key, false));
+                
+                document.getElementById('start-button').addEventListener('click', () => this.start());
+                document.getElementById('restart-button').addEventListener('click', () => this.restart());
+                document.getElementById('pause-button').addEventListener('click', () => this.togglePause());
+                document.getElementById('resume-button').addEventListener('click', () => this.togglePause());
+                document.getElementById('restart-pause-button').addEventListener('click', () => this.restart());
+                document.getElementById('quit-button').addEventListener('click', () => location.reload());
+            }
+
+            start() {
+                this.state.started = true;
+                this.elements.startScreen.style.opacity = 0;
+                setTimeout(() => this.elements.startScreen.style.display = 'none', 500);
+                this.audio.bgMusic.play();
+            }
+
+            restart() {
+                this.elements.gameOverScreen.style.opacity = 0;
+                this.elements.pauseMenu.style.display = 'none';
+                setTimeout(() => {
+                    this.elements.gameOverScreen.style.display = 'none';
+                    this.reset();
+                    this.start();
+                }, 500);
+            }
+
+            togglePause() {
+                if (!this.state.started) return;
+                this.state.paused = !this.state.paused;
+                this.elements.pauseMenu.style.display = this.state.paused ? 'flex' : 'none';
+                this.state.paused ? this.audio.bgMusic.pause() : this.audio.bgMusic.play();
+            }
+
+            spawnEntity(type) {
+                const x = Math.random() * (this.canvas.width - 30);
+                switch (type) {
+                    case 'core':
+                        this.entities.cores.push({
+                            x, y: -20, size: 20,
+                            speed: 2 + Math.random() * 2 + this.state.sector * 0.2
+                        });
+                        break;
+                    case 'drone':
+                        this.entities.drones.push({
+                            x, y: -30, size: 30,
+                            speed: 1.5 + Math.random() * 2 + this.state.sector * 0.1,
+                            angle: Math.random() * Math.PI * 2,
+                            chaseSpeed: 0.05,
+                            type: 'standard'
+                        });
+                        break;
+                    case 'interceptor':
+                        this.entities.drones.push({
+                            x, y: -30, size: 20,
+                            speed: 3 + Math.random() * 2 + this.state.sector * 0.15,
+                            angle: Math.random() * Math.PI * 2,
+                            chaseSpeed: 0.08,
+                            type: 'interceptor'
+                        });
+                        break;
+                    case 'powerUp':
+                        const types = ['speed', 'shield', 'rapid', 'spread'];
+                        this.entities.powerUps.push({
+                            x, y: -25, size: 25,
+                            speed: 2,
+                            type: types[Math.floor(Math.random() * types.length)]
+                        });
+                        break;
+                    case 'laser':
+                        this.entities.lasers.push({
+                            x: this.player.x,
+                            y: this.player.y - this.player.size / 2,
+                            speed: 12,
+                            size: 10,
+                            angle: -Math.PI / 2
+                        });
+                        this.audio.shoot.play();
+                        break;
+                }
+            }
+
+            createParticles(x, y, color = 'rgba(0, 255, 255, 1)') {
+                for (let i = 0; i < 10; i++) {
+                    this.entities.particles.push({
+                        x, y,
+                        vx: (Math.random() - 0.5) * 4,
+                        vy: (Math.random() - 0.5) * 4,
+                        size: 5 + Math.random() * 5,
+                        life: 60,
+                        color
+                    });
+                }
+            }
+
+            update() {
+                if (!this.state.started || this.state.paused) return;
+
+                // Player movement
+                if (this.keys.get('ArrowLeft') && this.player.x > this.player.size) this.player.x -= this.player.speed;
+                if (this.keys.get('ArrowRight') && this.player.x < this.canvas.width - this.player.size) this.player.x += this.player.speed;
+                if (this.keys.get('ArrowUp') && this.player.y > this.player.size) this.player.y -= this.player.speed;
+                if (this.keys.get('ArrowDown') && this.player.y < this.canvas.height - this.player.size) this.player.y += this.player.speed;
+
+                // Shooting
+                if (this.keys.get(' ') && this.player.shootCooldown <= 0) {
+                    if (this.player.powerUps.has('spread')) {
+                        [-0.2, 0, 0.2].forEach(angle => {
+                            this.entities.lasers.push({
+                                x: this.player.x,
+                                y: this.player.y - this.player.size / 2,
+                                speed: 12,
+                                size: 10,
+                                angle: -Math.PI / 2 + angle
+                            });
+                        });
+                        this.audio.shoot.play();
+                    } else {
+                        this.spawnEntity('laser');
+                    }
+                    this.player.shootCooldown = this.player.powerUps.has('rapid') ? 5 : 15;
+                }
+                if (this.player.shootCooldown > 0) this.player.shootCooldown--;
+
+                // Update entities
+                this.updateEntities();
+
+                // Power-up timers
+                for (let [type, expiry] of this.player.powerUps) {
+                    if (Date.now() > expiry) {
+                        this.player.powerUps.delete(type);
+                        if (type === 'speed') this.player.speed = 5;
+                    }
+                }
+
+                // Spawning and progression
+                this.state.time++;
+                if (this.state.time % 600 === 0) this.state.sector++;
+                const spawnRate = 0.02 + this.state.sector * 0.005;
+                if (Math.random() < spawnRate) this.spawnEntity('core');
+                if (Math.random() < spawnRate) this.spawnEntity(Math.random() < 0.3 ? 'interceptor' : 'drone');
+                if (Math.random() < 0.01) this.spawnEntity('powerUp');
+
+                if (this.state.shields <= 0) this.endGame();
+            }
+
+            updateEntities() {
+                // Lasers
+                this.entities.lasers = this.entities.lasers.filter(laser => {
+                    laser.x += Math.cos(laser.angle) * laser.speed;
+                    laser.y += Math.sin(laser.angle) * laser.speed;
+                    return laser.y >= -laser.size;
+                });
+
+                // Cores
+                this.entities.cores = this.entities.cores.filter(core => {
+                    core.y += core.speed;
+                    if (this.checkCollision(this.player, core)) {
+                        this.state.combo++;
+                        this.state.credits += 1 + Math.floor(this.state.combo / 5);
+                        this.audio.collect.play();
+                        this.createParticles(core.x, core.y);
+                        setTimeout(() => this.state.combo = Math.max(0, this.state.combo - 1), 2000);
+                        return false;
+                    }
+                    return core.y <= this.canvas.height;
+                });
+
+                // Drones
+                this.entities.drones = this.entities.drones.filter(drone => {
+                    const dx = this.player.x - drone.x;
+                    const dy = this.player.y - drone.y;
+                    const targetAngle = Math.atan2(dy, dx);
+                    drone.angle += (targetAngle - drone.angle) * drone.chaseSpeed;
+                    drone.x += Math.cos(drone.angle) * drone.speed;
+                    drone.y += Math.sin(drone.angle) * drone.speed;
+
+                    if (this.checkCollision(this.player, drone) && !this.player.powerUps.has('shield')) {
+                        this.state.shields -= drone.type === 'standard' ? 10 : 15;
+                        this.createParticles(drone.x, drone.y, 'rgba(255, 0, 255, 1)');
+                        this.audio.hit.play();
+                        return false;
+                    }
+
+                    return drone.y <= this.canvas.height + drone.size &&
+                           drone.x >= -drone.size &&
+                           drone.x <= this.canvas.width + drone.size;
+                });
+
+                // Power-ups
+                this.entities.powerUps = this.entities.powerUps.filter(pu => {
+                    pu.y += pu.speed;
+                    if (this.checkCollision(this.player, pu)) {
+                        this.player.powerUps.set(pu.type, Date.now() + 5000);
+                        if (pu.type === 'speed') this.player.speed = 8;
+                        this.createParticles(pu.x, pu.y, 'rgba(255, 255, 0, 1)');
+                        return false;
+                    }
+                    return pu.y <= this.canvas.height;
+                });
+
+                // Particles
+                this.entities.particles = this.entities.particles.filter(p => {
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    return --p.life > 0;
+                });
+
+                // Collision detection with lasers
+                this.entities.lasers.forEach((laser, lIdx) => {
+                    this.entities.drones.forEach((drone, dIdx) => {
+                        if (this.checkCollision(laser, drone)) {
+                            this.state.credits += 5;
+                            this.createParticles(drone.x, drone.y, 'rgba(255, 0, 255, 1)');
+                            this.entities.drones.splice(dIdx, 1);
+                            this.entities.lasers.splice(lIdx, 1);
+                        }
+                    });
+                });
+            }
+
+            checkCollision(obj1, obj2) {
+                const dx = obj1.x - obj2.x;
+                const dy = obj1.y - obj2.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance < (obj1.size + obj2.size) / 2;
+            }
+
+            endGame() {
+                this.state.started = false;
+                this.audio.bgMusic.pause();
+                const score = this.state.credits * this.state.sector;
+                if (score > this.state.highScore) {
+                    this.state.highScore = score;
+                    localStorage.setItem('highScore', score);
+                }
+                this.elements.finalScore.textContent = `Score: ${score} (High: ${this.state.highScore})`;
+                this.elements.gameOverScreen.style.display = 'flex';
+                this.elements.gameOverScreen.style.opacity = 1;
+            }
+
+            draw() {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Player
+                this.ctx.fillStyle = this.player.powerUps.has('shield') ? '#ffff00' : '#00ffff';
+                this.ctx.shadowBlur = 20;
+                this.ctx.shadowColor = this.ctx.fillStyle;
+                this.ctx.beginPath();
+                this.ctx.moveTo(this.player.x, this.player.y - this.player.size / 2);
+                this.ctx.lineTo(this.player.x - this.player.size / 2, this.player.y + this.player.size / 2);
+                this.ctx.lineTo(this.player.x + this.player.size / 2, this.player.y + this.player.size / 2);
+                this.ctx.closePath();
+                this.ctx.fill();
+                this.ctx.shadowBlur = 0;
+
+                // Lasers
+                this.ctx.strokeStyle = '#00ffff';
+                this.ctx.lineWidth = 2;
+                this.entities.lasers.forEach(laser => {
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(laser.x, laser.y);
+                    this.ctx.lineTo(laser.x + Math.cos(laser.angle) * 10, laser.y + Math.sin(laser.angle) * 10);
+                    this.ctx.stroke();
+                });
+
+                // Cores
+                this.entities.cores.forEach(core => {
+                    this.ctx.fillStyle = '#00ff00';
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.shadowColor = '#00ff00';
+                    this.ctx.beginPath();
+                    this.ctx.arc(core.x, core.y, core.size / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.shadowBlur = 0;
+                });
+
+                // Drones
+                this.entities.drones.forEach(drone => {
+                    this.ctx.fillStyle = drone.type === 'standard' ? '#ff00ff' : '#ff6600';
+                    this.ctx.shadowBlur = 15;
+                    this.ctx.shadowColor = this.ctx.fillStyle;
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(drone.x + Math.cos(drone.angle) * drone.size / 2, drone.y + Math.sin(drone.angle) * drone.size / 2);
+                    this.ctx.lineTo(drone.x + Math.cos(drone.angle + 2.5) * drone.size / 2, drone.y + Math.sin(drone.angle + 2.5) * drone.size / 2);
+                    this.ctx.lineTo(drone.x + Math.cos(drone.angle - 2.5) * drone.size / 2, drone.y + Math.sin(drone.angle - 2.5) * drone.size / 2);
+                    this.ctx.closePath();
+                    this.ctx.fill();
+                    this.ctx.shadowBlur = 0;
+                });
+
+                // Power-ups
+                this.entities.powerUps.forEach(pu => {
+                    this.ctx.fillStyle = {
+                        speed: '#00ccff',
+                        shield: '#ffff00',
+                        rapid: '#ff00ff',
+                        spread: '#00ff00'
+                    }[pu.type];
+                    this.ctx.shadowBlur = 10;
+                    this.ctx.shadowColor = this.ctx.fillStyle;
+                    this.ctx.beginPath();
+                    this.ctx.arc(pu.x, pu.y, pu.size / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                    this.ctx.shadowBlur = 0;
+                });
+
+                // Particles
+                this.entities.particles.forEach(p => {
+                    this.ctx.fillStyle = p.color.replace('1)', `${p.life / 60})`);
+                    this.ctx.beginPath();
+                    this.ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+                    this.ctx.fill();
+                });
+
+                // UI
+                this.elements.credits.innerHTML = `<span class="icon">💰</span>${this.state.credits}${this.state.combo > 5 ? ` (x${Math.floor(this.state.combo / 5)})` : ''}`;
+                this.elements.shields.innerHTML = `<span class="icon">🛡️</span>${this.state.shields}`;
+                this.elements.shields.style.transform = this.state.shields < 30 ? 'scale(1.1)' : 'scale(1)';
+                this.elements.sector.textContent = `Sector: ${this.state.sector}`;
+            }
+
+            gameLoop() {
+                this.update();
+                this.draw();
+                requestAnimationFrame(() => this.gameLoop());
+            }
+        }
+
+        new Game();
+    </script>
+</body>
+</html>
